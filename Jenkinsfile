@@ -10,17 +10,20 @@ pipeline {
             }
         }
 
-        stage('Unit Tests') {
-            steps {
-                sh './mvnw clean test'
-            }
-        }
+       stage('Unit Tests') {
+    steps {
+        sh 'chmod +x mvnw'
+        sh './mvnw clean test'
+    }
+}
 
-        stage('Integration Tests & Package') {
-            steps {
-                sh './mvnw verify'
-            }
-        }
+       stage('Integration Tests & Package') {
+    steps {
+        sh 'chmod +x mvnw'
+        sh './mvnw verify'
+    }
+}
+
 
         stage('Archive Artifact') {
             steps {
