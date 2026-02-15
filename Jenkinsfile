@@ -24,6 +24,12 @@ pipeline {
     }
 }
 
+stage('Check Docker Access') {
+            steps {
+                sh 'docker --version'
+            }
+        }
+
 
         stage('Archive Artifact') {
             steps {
