@@ -30,6 +30,11 @@ stage('Check Docker Access') {
             }
         }
 
+ stage('Build Docker Image') {
+            steps {
+                sh "docker build -t demo-app:${BUILD_NUMBER} ."
+            }
+        }
 
         stage('Archive Artifact') {
             steps {
