@@ -31,6 +31,9 @@ stage('Check Docker Access') {
         }
 
 stage('Build & Push Docker Image') {
+    when {
+        branch 'main'
+    }
     steps {
         withCredentials([usernamePassword(credentialsId: 'docker-hub-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
             sh '''
@@ -44,6 +47,7 @@ stage('Build & Push Docker Image') {
         }
     }
 }
+
 
 
 stage('Deploy Container') {
