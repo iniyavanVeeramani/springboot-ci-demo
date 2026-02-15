@@ -33,11 +33,14 @@ stage('Check Docker Access') {
 stage('Build Docker Image') {
     steps {
         sh '''
+        unset DOCKER_TLS_VERIFY
+        unset DOCKER_CERT_PATH
         export DOCKER_HOST=unix:///var/run/docker.sock
         docker build -t demo-app:${BUILD_NUMBER} .
         '''
     }
 }
+
 
 
         stage('Archive Artifact') {
