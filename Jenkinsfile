@@ -60,10 +60,11 @@ stage('Deploy Container') {
         sleep 20
 
         echo "Checking health endpoint..."
-        curl -f http://localhost:8090/hello
+        docker exec demo-container curl -f http://localhost:8080/hello
         '''
     }
 }
+
 
 
 
