@@ -41,6 +41,14 @@ stage('Build Docker Image') {
     }
 }
 
+stage('Deploy Container') {
+    steps {
+        sh '''
+        docker rm -f demo-container || true
+        docker run -d -p 8090:8081 --name demo-container demo-app:${BUILD_NUMBER}
+        '''
+    }
+}
 
 
         stage('Archive Artifact') {
