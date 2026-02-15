@@ -32,15 +32,19 @@ stage('Check Docker Access') {
 
 stage('Build & Push Docker Image') {
     steps {
-        sh '''
-        docker build -t demo-app:${BUILD_NUMBER} .
-        docker tag demo-app:${BUILD_NUMBER} iniyavan128/demo-app:${BUILD_NUMBER}
-        docker tag demo-app:${BUILD_NUMBER} iniyavan128/demo-app:latest
-        docker push iniyavan128/demo-app:${BUILD_NUMBER}
-        docker push iniyavan128/demo-app:latest
-        '''
+        withCredentials([usernamePassword(credentialsId: 'docker-hub-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+            sh '''
+            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+            docker build -t demo-app:${BUILD_NUMBER} .
+            docker tag demo-app:${BUILD_NUMBER} iniyavan128/demo-app:${BUILD_NUMBER}
+            docker tag demo-app:${BUILD_NUMBER} iniyavan128/demo-app:latest
+            docker push iniyavan128/demo-app:${BUILD_NUMBER}
+            docker push iniyavan128/demo-app:latest
+            '''
+        }
     }
 }
+
 
 stage('Deploy Container') {
     steps {
