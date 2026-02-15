@@ -30,13 +30,14 @@ stage('Check Docker Access') {
             }
         }
 
-stage('Build Docker Image') {
+stage('Build & Push Docker Image') {
     steps {
         sh '''
-        unset DOCKER_TLS_VERIFY
-        unset DOCKER_CERT_PATH
-        export DOCKER_HOST=unix:///var/run/docker.sock
         docker build -t demo-app:${BUILD_NUMBER} .
+        docker tag demo-app:${BUILD_NUMBER} iniyavan128/demo-app:${BUILD_NUMBER}
+        docker tag demo-app:${BUILD_NUMBER} iniyavan128/demo-app:latest
+        docker push iniyavan128/demo-app:${BUILD_NUMBER}
+        docker push iniyavan128/demo-app:latest
         '''
     }
 }
