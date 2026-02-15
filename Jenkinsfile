@@ -55,9 +55,16 @@ stage('Deploy Container') {
         sh '''
         docker rm -f demo-container || true
         docker run -d -p 8090:8081 --name demo-container demo-app:${BUILD_NUMBER}
+
+        echo "Waiting for application to start..."
+        sleep 15
+
+        echo "Checking health endpoint..."
+        curl -f http://localhost:8090/hello
         '''
     }
 }
+
 
 
         stage('Archive Artifact') {
