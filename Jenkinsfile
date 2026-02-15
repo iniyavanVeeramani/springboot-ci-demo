@@ -30,11 +30,15 @@ stage('Check Docker Access') {
             }
         }
 
- stage('Build Docker Image') {
-            steps {
-                sh "docker build -t demo-app:${BUILD_NUMBER} ."
-            }
-        }
+stage('Build Docker Image') {
+    steps {
+        sh '''
+        export DOCKER_HOST=unix:///var/run/docker.sock
+        docker build -t demo-app:${BUILD_NUMBER} .
+        '''
+    }
+}
+
 
         stage('Archive Artifact') {
             steps {
