@@ -55,11 +55,21 @@ stage('Deploy Container') {
         docker rm -f demo-container || true
         docker run -d -p 8090:8080 --name demo-container demo-app:${BUILD_NUMBER}
 
-        echo "Waiting for application to start..."
-        sleep 20
+        echo "Waiting for application to become healthy..."
 
-        echo "Checking health endpoint..."
-        curl -f http://host.docker.internal:8090/hello
+        for i in {1..10}
+        do
+            if curl -s http://host.docker.internal:8090/hello > /dev/null; then
+                echo "Application is UP"
+                exit 0
+            fi
+
+            echo "Still starting... retry $i"
+            sleep 5
+        done
+
+        echo "Application failed to start"
+        exit 1
         '''
     }
 }
