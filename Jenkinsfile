@@ -52,31 +52,44 @@ stage('Build & Push Docker Image') {
 stage('Deploy Container') {
     steps {
         sh '''
-        docker rm -f demo-container || true
+        echo "Starting new version..."
 
-        docker run -d \
-          --name demo-container \
-          --network jenkins-network \
-          -p 8090:8081 \
-          demo-app:${BUILD_NUMBER}
+        # Remove any leftover temp container
+        docker rm -f demo-container-new || true
+
+        # Run NEW version with temporary name
+        docker run -d --name demo-container-new \
+        --network jenkins-network \
+        demo-app:${BUILD_NUMBER}
 
         echo "Waiting for application to become healthy..."
 
         i=1
         while [ $i -le 20 ]
         do
-          if curl -s http://localhost:8090/hello > /dev/null
-          then
-            echo "Application is UP!"
-            exit 0
-          fi
-          echo "Retry $i..."
-          sleep 5
-          i=$((i+1))
+            if docker exec demo-container-new wget -qO- http://localhost:8081/hello > /dev/null 2>&1
+            then
+                echo "New version is healthy!"
+
+                echo "Stopping old container..."
+                docker rm -f demo-container || true
+
+                echo "Promoting new container to production..."
+                docker rename demo-container-new demo-container
+
+                exit 0
+            fi
+
+            echo "Still starting... retry $i"
+            sleep 5
+            i=$((i+1))
         done
 
-        echo "Application failed to start"
-        docker logs demo-container
+        echo "New version failed! Keeping previous version running."
+
+        docker logs demo-container-new
+        docker rm -f demo-container-new || true
+
         exit 1
         '''
     }
