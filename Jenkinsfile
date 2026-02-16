@@ -52,31 +52,24 @@ stage('Build & Push Docker Image') {
 stage('Deploy Container') {
     steps {
         sh '''
-        echo "Starting new version..."
+        echo "Starting deployment of version ${BUILD_NUMBER}..."
 
-        # Remove any leftover temp container
-        docker rm -f demo-container-new || true
+        PREVIOUS_IMAGE=$(docker ps -a --format '{{.Image}}' | grep demo-app | head -n 1 || true)
 
-        # Run NEW version with temporary name
-        docker run -d --name demo-container-new \
-        --network jenkins-network \
-        demo-app:${BUILD_NUMBER}
+        docker rm -f demo-container || true
+
+        docker run -d --name demo-container --network jenkins-network demo-app:${BUILD_NUMBER}
 
         echo "Waiting for application to become healthy..."
 
         i=1
         while [ $i -le 20 ]
         do
-            if docker exec demo-container-new wget -qO- http://localhost:8081/hello > /dev/null 2>&1
+            if docker exec demo-container wget -qO- http://localhost:8081/hello > /dev/null 2>&1
             then
-                echo "New version is healthy!"
-
-                echo "Stopping old container..."
-                docker rm -f demo-container || true
-
-                echo "Promoting new container to production..."
-                docker rename demo-container-new demo-container
-
+                echo "Application is UP!"
+                echo "Running version:"
+                docker inspect demo-container --format='{{.Config.Image}}'
                 exit 0
             fi
 
@@ -85,10 +78,17 @@ stage('Deploy Container') {
             i=$((i+1))
         done
 
-        echo "New version failed! Keeping previous version running."
+        echo "Deployment failed. Showing logs:"
+        docker logs demo-container
 
-        docker logs demo-container-new
-        docker rm -f demo-container-new || true
+        if [ ! -z "$PREVIOUS_IMAGE" ]; then
+            echo "Rolling back to previous image: $PREVIOUS_IMAGE"
+            docker rm -f demo-container || true
+            docker run -d --name demo-container --network jenkins-network $PREVIOUS_IMAGE
+            echo "Rollback completed."
+        else
+            echo "No previous image found for rollback."
+        fi
 
         exit 1
         '''
