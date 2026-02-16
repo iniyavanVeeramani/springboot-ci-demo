@@ -53,7 +53,7 @@ stage('Deploy Container') {
     steps {
         sh '''
         docker rm -f demo-container || true
-        
+
         docker run -d \
           --name demo-container \
           --network jenkins-network \
@@ -62,7 +62,8 @@ stage('Deploy Container') {
 
         echo "Waiting for application to become healthy..."
 
-        for i in {1..20}
+        i=1
+        while [ $i -le 20 ]
         do
           if curl -s http://localhost:8090/hello > /dev/null
           then
@@ -71,6 +72,7 @@ stage('Deploy Container') {
           fi
           echo "Retry $i..."
           sleep 5
+          i=$((i+1))
         done
 
         echo "Application failed to start"
