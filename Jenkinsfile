@@ -53,21 +53,22 @@ stage('Deploy Container') {
     steps {
         sh '''
         docker rm -f demo-container || true
-        docker run -d -p 8090:8080 --name demo-container demo-app:${BUILD_NUMBER}
+
+        docker run -d \
+          --name demo-container \
+          --network jenkins-network \
+          demo-app:${BUILD_NUMBER}
 
         echo "Waiting for application to become healthy..."
 
-        i=1
-        while [ $i -le 10 ]
+        for i in {1..10}
         do
-            if curl -s http://host.docker.internal:8090/hello > /dev/null; then
-                echo "Application is UP"
-                exit 0
-            fi
-
-            echo "Still starting... retry $i"
-            sleep 5
-            i=$((i+1))
+          if docker exec demo-container wget -qO- http://localhost:8080/hello ; then
+            echo "Application is UP"
+            exit 0
+          fi
+          echo "Still starting... retry $i"
+          sleep 5
         done
 
         echo "Application failed to start"
