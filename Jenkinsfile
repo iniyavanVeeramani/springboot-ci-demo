@@ -54,16 +54,17 @@ stage('Deploy Container') {
     steps {
         sh '''
         docker rm -f demo-container || true
-        docker run -d -p 8090:8080 --name demo-container demo-app:${BUILD_NUMBER}
+        docker run -d --name demo-container demo-app:${BUILD_NUMBER}
 
         echo "Waiting for application to start..."
         sleep 20
 
         echo "Checking health endpoint..."
-        docker exec demo-container curl -f http://localhost:8080/hello
+        curl -f http://demo-container:8080/hello
         '''
     }
 }
+
 
 
 
