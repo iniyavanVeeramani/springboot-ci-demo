@@ -57,7 +57,8 @@ stage('Deploy Container') {
 
         echo "Waiting for application to become healthy..."
 
-        for i in {1..10}
+        i=1
+        while [ $i -le 10 ]
         do
             if curl -s http://host.docker.internal:8090/hello > /dev/null; then
                 echo "Application is UP"
@@ -66,6 +67,7 @@ stage('Deploy Container') {
 
             echo "Still starting... retry $i"
             sleep 5
+            i=$((i+1))
         done
 
         echo "Application failed to start"
