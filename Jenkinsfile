@@ -49,49 +49,60 @@ stage('Build & Push Docker Image') {
 }
 
 
-stage('Deploy Container') {
+stage('Deploy') {
+    when {
+        anyOf {
+            branch 'main'
+            branch 'develop'
+        }
+    }
     steps {
-        sh '''
-        echo "Starting deployment of version ${BUILD_NUMBER}..."
+        script {
 
-        PREVIOUS_IMAGE=$(docker ps -a --format '{{.Image}}' | grep demo-app | head -n 1 || true)
+            def containerName = ""
+            def portMapping = ""
 
-        docker rm -f demo-container || true
+            if (env.BRANCH_NAME == "main") {
+                containerName = "demo-prod"
+                portMapping = "-p 8091:8081"
+                echo "Deploying to PRODUCTION"
+            }
 
-        docker run -d --name demo-container --network jenkins-network demo-app:${BUILD_NUMBER}
+            if (env.BRANCH_NAME == "develop") {
+                containerName = "demo-staging"
+                portMapping = "-p 8092:8081"
+                echo "Deploying to STAGING"
+            }
 
-        echo "Waiting for application to become healthy..."
+            sh """
+            docker rm -f ${containerName} || true
 
-        i=1
-        while [ $i -le 20 ]
-        do
-            if docker exec demo-container wget -qO- http://localhost:8081/hello > /dev/null 2>&1
-            then
-                echo "Application is UP!"
-                echo "Running version:"
-                docker inspect demo-container --format='{{.Config.Image}}'
-                exit 0
-            fi
+            docker run -d --name ${containerName} \
+            --network jenkins-network \
+            ${portMapping} \
+            demo-app:${BUILD_NUMBER}
 
-            echo "Still starting... retry $i"
-            sleep 5
-            i=$((i+1))
-        done
+            echo "Waiting for application..."
 
-        echo "Deployment failed. Showing logs:"
-        docker logs demo-container
+            i=1
+            while [ \$i -le 20 ]
+            do
+                if docker exec ${containerName} wget -qO- http://localhost:8081/hello > /dev/null 2>&1
+                then
+                    echo "Deployment successful for ${containerName}"
+                    exit 0
+                fi
 
-        if [ ! -z "$PREVIOUS_IMAGE" ]; then
-            echo "Rolling back to previous image: $PREVIOUS_IMAGE"
-            docker rm -f demo-container || true
-            docker run -d --name demo-container --network jenkins-network $PREVIOUS_IMAGE
-            echo "Rollback completed."
-        else
-            echo "No previous image found for rollback."
-        fi
+                echo "Retry \$i..."
+                sleep 5
+                i=\$((i+1))
+            done
 
-        exit 1
-        '''
+            echo "Deployment failed for ${containerName}"
+            docker logs ${containerName}
+            exit 1
+            """
+        }
     }
 }
 
